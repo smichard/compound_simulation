@@ -1,5 +1,3 @@
-# app.R — Vollständige Version (mit Zielwert-Linien und Erklärungen)
-
 suppressPackageStartupMessages({
   library(dplyr)
   library(ggplot2)
@@ -11,13 +9,13 @@ suppressPackageStartupMessages({
 })
 
 ui <- fluidPage(
-  titlePanel("Wertentwicklung mit Monte-Carlo Simulation"),
+  titlePanel("Portfolio Growth with Monte Carlo Simulation"),
   
   sidebarLayout(
     sidebarPanel(
       autonumericInput(
         inputId = "start_val",
-        label   = "Anfangskapital [€]",
+        label   = "Initial Capital [€]",
         value   = 10000,
         currencySymbol = " €",
         currencySymbolPlacement = "s",
@@ -27,7 +25,7 @@ ui <- fluidPage(
       ),
       autonumericInput(
         inputId = "m_save",
-        label   = "Monatliche Sparrate [€]",
+        label   = "Monthly Savings [€]",
         value   = 500,
         currencySymbol = " €",
         currencySymbolPlacement = "s",
@@ -36,14 +34,14 @@ ui <- fluidPage(
         decimalPlaces = 0
       ),
       
-      sliderInput("mu", "Jährliche Rendite (μ, p.a.)",
+      sliderInput("mu", "Annual Return (μ, p.a.)",
                   min = 0, max = 40, value = 8, step = 0.5, post = "%"),
-      sliderInput("sigma", "Risiko-Bandbreite (σ, p.a.)",
+      sliderInput("sigma", "Volatility (σ, p.a.)",
                   min = 0, max = 30, value = 18, step = 1, post = "%"),
       
       autonumericInput(
         inputId = "elastic",
-        label   = "Sparraten-Elastizität (Δ €/Monat)",
+        label   = "Savings Elasticity (Δ €/month)",
         value   = 200,
         currencySymbol = " €",
         currencySymbolPlacement = "s",
@@ -52,10 +50,10 @@ ui <- fluidPage(
         decimalPlaces = 0
       ),
       
-      checkboxInput("stresstest", "Stresstest (μ halbieren, σ verdoppeln im ganzen Horizont)", value = FALSE),
+      checkboxInput("stresstest", "Stress Test (halve μ, double σ across horizon)", value = FALSE),
       
-      sliderInput("horizon_years", "Betrachtungshorizont [Jahre]", min = 1, max = 30, value = 15, step = 1),
-      sliderInput("sims", "Anzahl Simulationen", min = 1000, max = 9000, value = 3000, step = 1000),
+      sliderInput("horizon_years", "Time Horizon [years]", min = 1, max = 30, value = 15, step = 1),
+      sliderInput("sims", "Number of Simulations", min = 1000, max = 9000, value = 3000, step = 1000),
       
       br(),
       uiOutput("sigma_explain_box")
@@ -68,10 +66,10 @@ ui <- fluidPage(
       fluidRow(
         column(
           6,
-          h4("Zielwahrscheinlichkeit"),
+          h4("Target Probability"),
           autonumericInput(
             inputId = "goal_value",
-            label   = "Zielwert [€]",
+            label   = "Target Value [€]",
             value   = 100000,
             currencySymbol = " €",
             currencySymbolPlacement = "s",
@@ -79,12 +77,12 @@ ui <- fluidPage(
             digitGroupSeparator = ".",
             decimalPlaces = 0
           ),
-          dateInput("goal_date", "Zieldatum", value = Sys.Date() %m+% years(10), format  = "dd-mm-yyyy"),
+          dateInput("goal_date", "Target Date", value = Sys.Date() %m+% years(10), format  = "dd-mm-yyyy"),
           textOutput("goalprob"),
         ),
         column(
           6,
-          h4("Sparraten-Elastizität (Uplift am Horizont)"),
+          h4("Savings Elasticity (Horizon Uplift)"),
           verbatimTextOutput("uplift_summary")
         )
       )
@@ -152,8 +150,8 @@ server <- function(input, output, session){
     fd <- fan_data()
     det_df <- fd$det_df; quant_df <- fd$quant_df
     
-    median_lab <- quant_df %>% tail(1) %>% transform(y = p50, label="Medianpfad")
-    det_lab    <- det_df %>% tail(1) %>% transform(y = Depot, label="Erwartungspfad")
+    median_lab <- quant_df %>% tail(1) %>% transform(y = p50, label="Median path")
+    det_lab    <- det_df %>% tail(1) %>% transform(y = Depot, label="Expectation path")
     
     # Zielwert Linien
     zielwert <- as.numeric(input$goal_value)
@@ -173,9 +171,9 @@ server <- function(input, output, session){
       # Zieldatum vertikale Linie
       geom_vline(xintercept = as.numeric(zieldatum), linetype="dashed", linewidth=1, color="lightgreen") +
       labs(
-        title = paste0("Wertentwicklung nach ", input$horizon_years, " Jahren"),
+        title = paste0("Portfolio value over ", input$horizon_years, " years"),
         x = "", 
-        y = "Wertentwicklung [ € ]"
+        y = "Portfolio Value [ € ]"
       ) +
       scale_y_continuous(labels=scales::label_number(big.mark=".", decimal.mark=",")) +
       theme_minimal() +
@@ -222,7 +220,7 @@ server <- function(input, output, session){
     lab_df <- data.frame(
       x     = c(q50, muE),
       y     = c(0.90, 0.72),           # vertikal versetzt (normierte Skala)
-      label = c("Medianwert", "Erwartungswert"),
+      label = c("Median", "Mean"),
       col   = c("black", "blue")
     )
     
@@ -254,9 +252,9 @@ server <- function(input, output, session){
         show.legend = FALSE
       ) +
       labs(
-        title = paste0("Verteilung des Endwerts nach ", input$horizon_years, " Jahren"),
-        x = "Endwert [ € ]",
-        y = "Dichte (normiert)"
+        title = paste0("Distribution of the End Value after ", input$horizon_years, " years"),
+        x = "End Value [ € ]",
+        y = "Density (normalized)"
       ) +
       scale_x_continuous(labels = scales::label_number(big.mark = ".", decimal.mark = ","), limits = c(0, x_max)) +
       # (3) y-Achse gut lesbar (0..1, keine wissenschaftliche Notation)
@@ -280,16 +278,16 @@ server <- function(input, output, session){
     goal_d  <- input$goal_date
     
     idx <- which.min(abs(dates - goal_d))
-    if (length(idx)==0 || idx > nrow(sim_mat)) return("Datum außerhalb des Horizonts")
+    if (length(idx)==0 || idx > nrow(sim_mat)) return("Date outside the horizon")
     
     prob <- mean(sim_mat[idx, ] >= goal_v)
     
     paste0(
-      "Wahrscheinlichkeit, dass ",
+      "Probability that on ",
       format(goal_d, "%d-%m-%Y"),
-      " mindestens ",
+      " at least ",
       formatC(goal_v, format = "f", big.mark = ".", decimal.mark = ",", digits = 0),
-      " € erreicht werden: ",
+      " € is reached: ",
       scales::percent(prob, accuracy = 0.1, decimal.mark = ",")
     )
   })
@@ -307,28 +305,28 @@ server <- function(input, output, session){
     up_end   <- median(sim_up[months, ])
     uplift   <- up_end - base_end
     
-    paste0("Wenn die Sparrate um ", input$elastic, " € pro Monat steigt,\n",
-           "liegt der Median-Endwert nach ", input$horizon_years, " Jahren\n",
-           "um ca. ", format(round(uplift,0), big.mark=".", decimal.mark=","), " € höher.")
+    paste0("If the monthly savings increases by ", input$elastic, " €,\n",
+           "the median end value after ", input$horizon_years, " years\n",
+           "is higher by approx. ", format(round(uplift,0), big.mark=".", decimal.mark=","), " €.")
   })
   
   # ---- Dynamische σ-Erklärung ----
   output$sigma_explain_box <- renderUI({
     mu    <- input$mu/100
     sigma <- input$sigma/100
-    rng68 <- paste0(percent(mu-sigma, accuracy=1), " bis ", percent(mu+sigma, accuracy=1))
-    rng95 <- paste0(percent(mu-2*sigma, accuracy=1), " bis ", percent(mu+2*sigma, accuracy=1))
+    rng68 <- paste0(percent(mu-sigma, accuracy=1), " to ", percent(mu+sigma, accuracy=1))
+    rng95 <- paste0(percent(mu-2*sigma, accuracy=1), " to ", percent(mu+2*sigma, accuracy=1))
     div(style="background-color:#f0f0f0; padding:8px; border-radius:5px;",
-        p("Erwartungspfad: Deterministischer Durchschnittspfad mit der angenommenen Jahresrendite ohne Zufallsschwankungen"),
-        p("Medianpfad: In 50 % der Szenarien liegt die Wertentwicklung darüber, in 50 % darunter. Realistischer als der Erwartungspfad, weil Marktschwankungen einfließen."),
-        p("Dunkelgraue Fläche: 50 % aller Szenarien (25.–75. Perzentil)."),
-        p("Hellgraue Fläche: 90 % aller Szenarien (5.–95. Perzentil)."),
-        p(paste0("Ca. 68 % aller Jahresrenditen liegen im Bereich ",
+        p("Expectation path: Deterministic average path using the assumed annual return without random fluctuations."),
+        p("Median path: In 50% of scenarios the development is above, in 50% below. More realistic than the expectation path because market fluctuations are included."),
+        p("Dark gray area: 50% of all scenarios (25th–75th percentile)."),
+        p("Light gray area: 90% of all scenarios (5th–95th percentile)."),
+        p(paste0("About 68% of annual returns fall within ",
                  percent(mu,accuracy=1), " ± ", percent(sigma,accuracy=1),
-                 " → also zwischen ", rng68, ".")),
-        p(paste0("Ca. 95 % aller Jahresrenditen liegen im Bereich ",
+                 " → i.e., between ", rng68, ".")),
+        p(paste0("About 95% of annual returns fall within ",
                  percent(mu,accuracy=1), " ± ", percent(2*sigma,accuracy=1),
-                 " → also zwischen ", rng95, ".")))
+                 " → i.e., between ", rng95, ".")))
   })
 }
 
