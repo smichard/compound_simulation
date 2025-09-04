@@ -85,6 +85,6 @@ jobs:
       with:
         context: .
         file: Containerfile
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: true
         tags: quay.io/michard/compound_simulation:${{ env.TAG }},quay.io/michard/compound_simulation:latest
