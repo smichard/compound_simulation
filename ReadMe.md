@@ -6,7 +6,7 @@ It also supports a stress test (halve μ, double σ), a goal tracker (target val
 
 Note: This is a theoretical model based on your inputs and random simulations. Real markets can deviate materially.
 
-Container image: [Quay link](https://quay.io/repository/michard/compound_simulation)
+Container image: [Quay link](https://quay.io/repository/michard/compound_simulation)   
 App: [Demo link](https://compound-simulation-139537757990.europe-north1.run.app)
 
 ## Input Parameters
@@ -63,5 +63,5 @@ podman build -t my_app -f Containerfile .
 podman run --rm -p 3838:3838 my_app
 ```
 
-5. Open the app in your browser:
+5. Open the app in your browser:  
 http://localhost:3838/
